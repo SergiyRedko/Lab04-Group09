@@ -83,18 +83,47 @@ void read_workload_file(char *filename)
 /*Function to print out the list of jobs and currently available information.*/
 const void printJobs(){
   struct job * someJob = head;
-  printf("Job List:\n");
+  printf("\nJob List:\n");
   while(someJob != NULL){
     printf("Job %d: arrived at %d, length is %d, execution started at %d, and ended at %d.\n",
     someJob->id, someJob->arrival, someJob->length, someJob->executionStarted, someJob->executionEnded);
     someJob = someJob->next;
   }
+  printf("\n");
+}
+
+int min(int a, int b){
+  if(a < b)
+    return a;
+  else
+    return b;
+}
+
+int max(int a, int b){
+  if(a > b)
+    return a;
+  else
+    return b;
 }
 
 void policy_FIFO(struct job *head)
 {
-  // TODO
-  printf("analyze_SJF is not implemented yet.\n");
+  printf("Execution trace with FIFO:\n");
+
+  int nextValidTime= 0;
+  struct job * someJob = head;
+  while(someJob != NULL){
+    (*someJob).executionStarted = max(nextValidTime, someJob->arrival);
+    (*someJob).executionEnded = someJob->executionStarted + someJob->length;
+    nextValidTime = someJob->executionEnded;
+
+    printf("t=%d: [Job %d] arrived at [%d], ran for: [%d]\n",
+            someJob->executionStarted, someJob->id, someJob->arrival, someJob->length);
+
+    someJob = someJob->next;
+  }
+
+  printf("End of execution widht FIFO.\n");
   return;
 }
 
