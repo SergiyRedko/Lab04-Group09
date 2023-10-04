@@ -231,6 +231,16 @@ void analyze(struct job * head){
   return;
 }
 
+void freeJobList(){
+  struct job * jobIterator = head;
+
+  while(jobIterator != NULL){
+    struct job * doomedJob = jobIterator;
+    jobIterator = jobIterator->next;
+    free(doomedJob);
+  }
+}
+
 int main(int argc, char **argv)
 {
 
@@ -273,8 +283,7 @@ int main(int argc, char **argv)
 
   //printJobs();
 
-  // TODO: Add other policies
-  // TODO: free memory (allocated for linked list)
+  freeJobList();
 
   exit(EXIT_SUCCESS);
 }
