@@ -85,7 +85,7 @@ const void printJobs(){
   struct job * someJob = head;
   printf("\nJob List:\n");
   while(someJob != NULL){
-    printf("Job %d: arrived at %d, length is %d, execution started at %d, and ended at %d.\n",
+    printf("Job %d: arr %d, len %d, %d >>> %d.\n",
     someJob->id, someJob->arrival, someJob->length, someJob->executionStarted, someJob->executionEnded);
     someJob = someJob->next;
   }
@@ -110,7 +110,7 @@ void policy_FIFO(struct job *head)
 {
   printf("Execution trace with FIFO:\n");
 
-  int nextValidTime= 0;
+  int nextValidTime = 0;
   struct job * someJob = head;
   while(someJob != NULL){
     (*someJob).executionStarted = max(nextValidTime, someJob->arrival);
@@ -127,22 +127,107 @@ void policy_FIFO(struct job *head)
   return;
 }
 
-void analyze_FIFO(struct job *head)
-{
-  // TODO
-  printf("analyze_SJF is not implemented yet.\n");
-  return;
+struct job * findShortestAvailableJob(int timeLimit){
+  struct job * result = NULL;
+  struct job * jobIterator = head;
+
+  // Scan through the list and find the shortest job that is already available.
+  while(jobIterator != NULL){
+    if(jobIterator->arrival <= timeLimit // No point checking this job otherwise. It hasn't arrived yet.
+       && jobIterator->executionStarted == -1){ //I.e., job hasn't been scheduled yet.
+
+      if(result == NULL) // Anything will do to begin with.
+        result = jobIterator;
+      else if(jobIterator->length < result->length) // If a shorter job is found.
+        result = jobIterator;
+    }
+
+    jobIterator = jobIterator->next;
+  }
+
+  return result;
+}
+
+int findNextJobsTime(){
+  struct job * jobIterator = head;
+  int nextJobsTime = -1;
+
+  // Scan through the list and find the shortest job that is already available.
+  while(jobIterator != NULL){
+    if(jobIterator->executionStarted == -1){ //I.e., job hasn't been scheduled yet.
+
+      if(nextJobsTime == -1) // Anything will do to begin with.
+        nextJobsTime = jobIterator->arrival;
+      else if(jobIterator->arrival < nextJobsTime) // If a shorter job is found.
+        nextJobsTime = jobIterator->arrival;
+    }
+
+    jobIterator = jobIterator->next;
+  }
+
+  return nextJobsTime;
 }
 
 void policy_SJF(struct job * head){
-  // TODO
-  printf("policy_SJF is not implemented yet.\n");
+  printf("Execution trace with SJF:\n");
+
+  int nextValidTime = 0;
+
+  // Keep scanning through jobs continuously.
+  while(1){
+    struct job * nextJob = findShortestAvailableJob(nextValidTime);
+
+    if(nextJob == NULL){ // Processor is idling, since there are no jobs to execute at this time. Move up the timeline.
+      printf("Processor is idling.\n");
+
+      nextValidTime = findNextJobsTime();
+
+      if(nextValidTime == -1) // All jobs have executed.
+        break;
+      else // If this executes, we know that at least one job will be found.
+        nextJob = findShortestAvailableJob(nextValidTime);
+    }
+
+    // Now that we have our next job, asisgn it.
+
+    (*nextJob).executionStarted = nextValidTime;
+    (*nextJob).executionEnded = nextJob->executionStarted + nextJob->length;
+    nextValidTime = nextJob->executionEnded;
+
+    printf("t=%d: [Job %d] arrived at [%d], ran for: [%d]\n",
+            nextJob->executionStarted, nextJob->id, nextJob->arrival, nextJob->length);
+  }
+
+  printf("End of execution widht SJF.\n");
   return;
 }
 
-void analyze_SJF(struct job * head){
-  // TODO
-  printf("analyze_SJF is not implemented yet.\n");
+void analyze(struct job * head){
+  float averageResponseTime = 0;
+  float averageTurnaroundTime = 0;
+  int numJobs = 0;
+  
+  struct job * jobIterator = head;
+
+  // Scan through the list and print statistics for each job.
+  while(jobIterator != NULL){
+    numJobs++;
+    int responseTime = jobIterator->executionStarted - jobIterator->arrival;
+    int turnaroundTime = jobIterator->executionEnded - jobIterator->arrival;
+
+    averageResponseTime += responseTime;
+    averageTurnaroundTime += turnaroundTime;
+
+    printf("Job %d -- Response time: %d Turnaround: %d Wait: %d\n",jobIterator->id , responseTime, turnaroundTime, responseTime);
+
+    jobIterator = jobIterator->next;
+  }
+
+  averageResponseTime /= numJobs;
+  averageTurnaroundTime /= numJobs;
+
+  printf("Average -- Response: %.2f Turnaround %.2f Wait %.2f\n", averageResponseTime, averageTurnaroundTime, averageResponseTime);
+  
   return;
 }
 
@@ -164,7 +249,7 @@ int main(int argc, char **argv)
   // the start of a linked-list of jobs, i.e., the job list
   read_workload_file(workload);
 
-  printJobs();
+  //printJobs();
 
   if (strcmp(policy, "FIFO") == 0 || strcmp(policy, "fifo") == 0)
   {
@@ -172,21 +257,21 @@ int main(int argc, char **argv)
     if (analysis)
     {
       printf("Begin analyzing FIFO:\n");
-      analyze_FIFO(head);
+      analyze(head);
       printf("End analyzing FIFO.\n");
     }
-    exit(EXIT_SUCCESS);
   }
   else if (strcmp(policy, "SJF") == 0 || strcmp(policy, "sjf") == 0)
   {
     policy_SJF(head);
     if (analysis){
       printf("Begin analyzing SJF:\n");
-      analyze_SJF(head);
+      analyze(head);
       printf("End analyzing SJF.\n");
     }
-    exit(EXIT_SUCCESS);
   }
+
+  //printJobs();
 
   // TODO: Add other policies
   // TODO: free memory (allocated for linked list)
